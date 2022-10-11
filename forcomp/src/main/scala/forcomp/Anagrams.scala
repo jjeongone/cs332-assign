@@ -33,10 +33,14 @@ object Anagrams {
    *  Note: the uppercase and lowercase version of the character are treated as the
    *  same character, and are represented as a lowercase character in the occurrence list.
    */
-  def wordOccurrences(w: Word): Occurrences = ???
+  def wordOccurrences(w: Word): Occurrences = {
+    w.toLowerCase().toList.groupBy((elem: Char) => elem).toList.map(elem => (elem._1, elem._2.length)).sortBy(_._1)
+  }
 
   /** Converts a sentence into its character occurrence list. */
-  def sentenceOccurrences(s: Sentence): Occurrences = ???
+  def sentenceOccurrences(s: Sentence): Occurrences = {
+    wordOccurrences(s.mkString)
+  }
 
   /** The `dictionaryByOccurrences` is a `Map` from different occurrences to a sequence of all
    *  the words that have that occurrence count.
@@ -53,10 +57,14 @@ object Anagrams {
    *    List(('a', 1), ('e', 1), ('t', 1)) -> Seq("ate", "eat", "tea")
    *
    */
-  lazy val dictionaryByOccurrences: Map[Occurrences, List[Word]] = ???
+  lazy val dictionaryByOccurrences: Map[Occurrences, List[Word]] = {
+    dictionary.groupBy((word: Word) => wordOccurrences(word))
+  }
 
   /** Returns all the anagrams of a given word. */
-  def wordAnagrams(word: Word): List[Word] = ???
+  def wordAnagrams(word: Word): List[Word] = {
+    dictionaryByOccurrences(wordOccurrences(word))
+  }
 
   /** Returns the list of all subsets of the occurrence list.
    *  This includes the occurrence itself, i.e. `List(('k', 1), ('o', 1))`
@@ -80,7 +88,21 @@ object Anagrams {
    *  Note that the order of the occurrence list subsets does not matter -- the subsets
    *  in the example above could have been displayed in some other order.
    */
-  def combinations(occurrences: Occurrences): List[Occurrences] = ???
+  def combinations(occurrences: Occurrences): List[Occurrences] = {
+    def availableOccurrences(occurrence: (Char, Int)): List[(Char, Int)] = {
+      if (occurrence._2 == 0) List[(Char, Int)]()
+      else occurrence::availableOccurrences((occurrence._1, occurrence._2-1))
+    }
+    def mergeOccurrences(cur: Occurrences, occurrences: Occurrences): List[Occurrences] = {
+      if (occurrences.isEmpty) List[Occurrences]()
+      else (occurrences.head::cur)::mergeOccurrences(cur, occurrences.tail)
+    }
+    def subOccurrences(cur: List[Occurrences], occurrences: Occurrences): List[Occurrences] = {
+      if (cur.isEmpty) List[Occurrences]()
+      else mergeOccurrences(cur.head, occurrences):::subOccurrences(cur.tail, occurrences)
+    }
+    occurrences.map((occurrence) => availableOccurrences(occurrence)).foldRight(List[(Char, Int)]()::List[Occurrences]()){(occur, acc) => acc:::subOccurrences(acc, occur)}
+  }
 
   /** Subtracts occurrence list `y` from occurrence list `x`.
    * 
@@ -92,7 +114,11 @@ object Anagrams {
    *  Note: the resulting value is an occurrence - meaning it is sorted
    *  and has no zero-entries.
    */
-  def subtract(x: Occurrences, y: Occurrences): Occurrences = ???
+  def subtract(x: Occurrences, y: Occurrences): Occurrences = {
+    x.foldLeft(List[(Char, Int)]()){(acc:Occurrences, elem: (Char, Int)) =>
+      if(y.exists(_._1 == elem._1)) acc:+(elem._1, elem._2-y.filter(_._1==elem._1).head._2) else acc:+elem
+    }.filter(_._2 != 0)
+  }
 
   /** Returns a list of all anagram sentences of the given sentence.
    *  
@@ -134,6 +160,23 @@ object Anagrams {
    *
    *  Note: There is only one anagram of an empty sentence.
    */
-  def sentenceAnagrams(sentence: Sentence): List[Sentence] = ???
+  def sentenceAnagrams(sentence: Sentence): List[Sentence] = {
+    def isWordExist(occurrences: Occurrences): Boolean = {
+      !dictionaryByOccurrences.getOrElse(occurrences, Nil).isEmpty
+    }
+    def generateSentences(words: List[Word], sentences: List[Sentence]): List[Sentence] = {
+      if (words.isEmpty) List[Sentence]()
+      else sentences.map(words.head::_):::generateSentences(words.tail, sentences)
+    }
+    def occurrenceToWord(occurrences: Occurrences): List[Sentence] = {
+      combinations(occurrences)
+        .foldLeft(List[Sentence]()){(acc: List[Sentence], cur: Occurrences) =>
+          if (cur.isEmpty) List[Word]()::acc
+          else if (isWordExist(cur)) acc:::(generateSentences(dictionaryByOccurrences(cur), occurrenceToWord(subtract(occurrences, cur))))
+          else acc
+        }
+    }
+    occurrenceToWord(sentenceOccurrences(sentence)).filter(sentenceOccurrences(_) == sentenceOccurrences(sentence))
+  }
 
 }

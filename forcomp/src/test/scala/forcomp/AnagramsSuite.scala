@@ -24,6 +24,9 @@ class AnagramsSuite extends FunSuite {
     assert(sentenceOccurrences(List("abcd", "e")) === List(('a', 1), ('b', 1), ('c', 1), ('d', 1), ('e', 1)))
   }
 
+  test("sentenceOccurrences: abcd a") {
+    assert(sentenceOccurrences(List("abcd", "a")) === List(('a', 2), ('b', 1), ('c', 1), ('d', 1)))
+  }
 
 
   test("dictionaryByOccurrences.get: eat") {
@@ -49,7 +52,12 @@ class AnagramsSuite extends FunSuite {
     assert(subtract(lard, r) === lad)
   }
 
-
+  test("subtract: happy - p") {
+    val happy = List(('a', 1), ('h', 1), ('p', 2), ('y', 1))
+    val p = List(('p', 1))
+    val hapy = List(('a', 1), ('h', 1), ('p', 1), ('y', 1))
+    assert(subtract(happy, p) === hapy)
+  }
 
   test("combinations: []") {
     assert(combinations(Nil) === List(Nil))
