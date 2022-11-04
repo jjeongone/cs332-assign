@@ -55,6 +55,7 @@ class BloxorzSuite extends FunSuite {
 
   test("optimal solution for level 1") {
     new Level1 {
+      val _ = print(solve(solution))
       assert(solve(solution) == Block(goal, goal))
     }
   }
