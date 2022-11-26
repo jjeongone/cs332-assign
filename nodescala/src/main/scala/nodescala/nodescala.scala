@@ -52,9 +52,9 @@ trait NodeScala {
   def start(relativePath: String)(handler: Request => Response): Subscription = {
     val listener = createListener(relativePath)
     val listenerSubscription = listener.start()
-    Future.run(){ newToken => async {
+    Future.run(){ newToken => Future {
       while (newToken.nonCancelled) {
-        val (nextRequest, nextExchange) = await(listener.nextRequest())
+        val (nextRequest, nextExchange) = Await.result(listener.nextRequest(), Duration.Inf)
         respond(nextExchange, newToken, handler(nextRequest))
       }
     }
